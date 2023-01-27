@@ -5,18 +5,109 @@
 		<title>
 			Mazemathics
 		</title>
+
+		<img src='./tilemap.png' hidden/>
 	</head>
 
 	<body>
 		<canvas></canvas>
 
-		<script>
+		<script type='module'>
 			const canvas = document.querySelector('canvas');
-			canvas.width = 400;
-			canvas.height = 400;
+			canvas.width = 600;
+			canvas.height = 600;
 			const pen = canvas.getContext('2d');
+			pen.imageSmoothingEnabled = false;
 
-			const TILE_COLORS = ['#000000', '#3f3f3f', '#bfbfbf']; // THIS IS TEMPORARY
+			const TILES_IMAGE = document.querySelector('img');
+			const TILES_MAP = [
+				{ // Floor
+					x: 0,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // Walls
+					x: 8,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // Door (Closed)
+					x: 16,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // Door (Open)
+					x: 24,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // 0
+					x: 0,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 1
+					x: 8,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 2
+					x: 16,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 3
+					x: 24,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 4
+					x: 32,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 5
+					x: 0,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 6
+					x: 8,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 7
+					x: 16,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 8
+					x: 24,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 9
+					x: 32,
+					y: 16,
+					w: 8,
+					h: 8
+				}
+			];
+
+			await new Promise((resolve) => TILES_IMAGE.addEventListener('load', resolve));
 
 			const socket = new WebSocket(`${location.protocol.replace('http', 'ws')}//${location.host}`);
 			socket.addEventListener('open', () => console.log('connected'));
@@ -30,8 +121,9 @@
 				const TILE_SIZE_Y = canvas.height / WORLD_SIZE_Y;
 				for (let x = 0; x < WORLD_SIZE_X; ++x) // ALSO TEMPORARY
 					for (let y = 0; y < WORLD_SIZE_Y; ++y) {
-						pen.fillStyle = TILE_COLORS[world[x][y]];
-						pen.fillRect(x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
+						// pen.fillStyle = TILE_COLORS[world[x][y]];
+						// pen.fillRect(x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
+						pen.drawImage(TILES_IMAGE, TILES_MAP[world[x][y]].x, TILES_MAP[world[x][y]].y, TILES_MAP[world[x][y]].w, TILES_MAP[world[x][y]].h, x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
 					}
 				for (const { color, direction, position, pulling } of players) { // AND THIS TOO
 					pen.fillStyle = color;
