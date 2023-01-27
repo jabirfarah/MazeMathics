@@ -104,12 +104,14 @@ new WebSocketServer({
 								endPushingPosition.y = (endPushingPosition.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
 							} while (TILES[world[endPushingPosition.x][endPushingPosition.y]].movable);
 							if (!TILES[world[endPushingPosition.x][endPushingPosition.y]].solid) {
+								const playerCanMove = !TILES[world[player.position.x][player.position.y]].solid;
 								for (let x = endPushingPosition.x; x - player.position.x; x = (x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X)
 									world[x][player.position.y] = world[(x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X][player.position.y];
 								for (let y = endPushingPosition.y; y - player.position.y; y = (y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y)
 									world[player.position.x][y] = world[player.position.x][(y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y];
+								world[player.position.x][player.position.y] = 0;
 								const pulledTile = world[(player.position.x + player.pulling.x + WORLD_SIZE_X) % WORLD_SIZE_X][(player.position.y + player.pulling.y + WORLD_SIZE_Y) % WORLD_SIZE_Y];
-								if (TILES[pulledTile].movable) {
+								if (playerCanMove && TILES[pulledTile].movable) {
 									world[player.position.x][player.position.y] = pulledTile;
 									world[(player.position.x + player.pulling.x + WORLD_SIZE_X) % WORLD_SIZE_X][(player.position.y + player.pulling.y + WORLD_SIZE_Y) % WORLD_SIZE_Y] = 0;
 									player.pulling = {
@@ -121,8 +123,10 @@ new WebSocketServer({
 										x: 0,
 										y: 0
 									};
-								player.position.x = (player.position.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
-								player.position.y = (player.position.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
+								if (playerCanMove) {
+									player.position.x = (player.position.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
+									player.position.y = (player.position.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
+								}
 							}
 						}
 						player.direction = newDirection;
@@ -144,5 +148,8 @@ new WebSocketServer({
 		} catch (error) {
 			console.log(error);
 		}
-	}).on('close', () => players.delete(uuid));
+	}).on('close', () => {
+		players.delete(uuid);
+		updateAllPlayers();
+	});
 })
