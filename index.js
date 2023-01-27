@@ -58,7 +58,7 @@ new WebSocketServer({
 	console.log('player connected');
 	const uuid = randomUUID();
 	players.set(uuid, {
-		color: `#${[...new Array(3)].map(() => Math.floor(Math.random() * 128) + 127).join('')}`,
+		color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // random color generator
 		direction: {
 			x: 0,
 			y: 0

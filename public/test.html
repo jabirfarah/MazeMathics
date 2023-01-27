@@ -8,18 +8,31 @@
 	</head>
 
 	<body>
+		<canvas></canvas>
+
 		<script>
+			const canvas = document.querySelector('canvas');
+			canvas.width = 400;
+			canvas.height = 400;
+			const pen = canvas.getContext('2d');
+
 			const socket = new WebSocket(`${location.protocol.replace('http', 'ws')}//${location.host}`);
 			socket.addEventListener('open', () => console.log('connected'));
 			socket.addEventListener('close', () => console.log('disconnected'));
 			socket.addEventListener('message', ({ data }) => {
 				const { world, players } = JSON.parse(data);
 
-				// Print world & players FOR TESTING
-				for (const player of players)
-					world[player.position.x][player.position.y] = 3;
-				for (const column of world)
-					console.log(column.join(' '));
+				// Draw world & players
+				const TILE_COLORS = ['#3f3f3f', '#7f7f7f', '#bfbfbf'];
+				for (let x = 0; x < world.length; ++x)
+					for (let y = 0; y < world[0].length; ++y) {
+						pen.fillStyle = TILE_COLORS[world[x][y]];
+						pen.fillRect(x * canvas.width / world.length, canvas.height - y * canvas.height / world[0].length, canvas.width / world.length, -canvas.height / world[0].length);
+					}
+				for (const { color, position: { x, y } } of players) {
+					pen.fillStyle = color;
+					pen.fillRect(x * canvas.width / world.length, canvas.height - y * canvas.height / world[0].length, canvas.width / world.length, -canvas.height / world[0].length);
+				}
 			});
 			socket.addEventListener('error', (error) => console.log(error));
 			const move = (directionAxis, directionStep) => socket.send(JSON.stringify({
