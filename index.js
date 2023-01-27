@@ -20,23 +20,34 @@ const TILES = [
 	}
 ];
 
-const worldSize = {
-	x: 20,
-	y: 20
-};
-const world = [];
-// Generate empty world
-for (let x = 0; x < worldSize.x; ++x) {
-	world.push([]);
-	for (let y = 0; y < worldSize.y; ++y)
-		world[x].push(0);
-}
-// Generate features for testing
-for (let y = 7; y < 17; ++y)
-	world[14][y] = 1;
-world[3][5] = 2;
-world[0][18] = 2;
-console.log('world generated');
+const world = [ // testing world
+	[1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 2, 2, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 2, 2, 2, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 2, 2, 2, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+	[1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
+];
+
+const WORLD_SIZE_X = world.length;
+const WORLD_SIZE_Y = world[0].length;
+const SPAWN_X = 1;
+const SPAWN_Y = 1;
 
 const players = new Map();
 const updateAllPlayers = () => {
@@ -52,20 +63,19 @@ new WebSocketServer({
 		createReadStream(path).on('open', function() {
 			response.setHeader('Content-Type', mime.getType(path));
 			this.pipe(response);
-		}).on('error', () => response.writeHead(404).end()); // Errors usually mean the file cannot be read (does not exist)
-	}).listen(8080, () => console.log('server listening on port 8080'))
+		}).on('error', () => response.writeHead(404).end());
+	}).listen(8080)
 }).on('connection', (socket) => {
-	console.log('player connected');
 	const uuid = randomUUID();
 	players.set(uuid, {
-		color: `#${Math.floor(Math.random() * 16777215).toString(16)}`, // random color generator
+		color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
 		direction: {
 			x: 0,
 			y: 0
 		},
 		position: {
-			x: 0,
-			y: 0
+			x: SPAWN_X,
+			y: SPAWN_Y
 		},
 		socket
 	});
@@ -74,28 +84,26 @@ new WebSocketServer({
 	socket.on('message', (data) => {
 		try {
 			const message = JSON.parse(data);
-			if (Object.hasOwn(player.direction, message.directionAxis)) { // If the requested direction exists
+			if (Object.hasOwn(player.direction, message.directionAxis)) {
 				const newDirection = {
 					x: 0,
 					y: 0
 				};
 				message.directionStep = +(message.directionStep > 0) || -1;
 				newDirection[message.directionAxis] = message.directionStep;
-				if (player.direction[message.directionAxis] === message.directionStep) { // If player is already facing that way
+				if (player.direction[message.directionAxis] === message.directionStep) {
 					const endPushingPosition = { ...player.position };
-					do { // Check if player can move boxes
-						endPushingPosition.x = (endPushingPosition.x + newDirection.x + worldSize.x) % worldSize.x;
-						endPushingPosition.y = (endPushingPosition.y + newDirection.y + worldSize.y) % worldSize.y;
+					do {
+						endPushingPosition.x = (endPushingPosition.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
+						endPushingPosition.y = (endPushingPosition.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
 					} while (TILES[world[endPushingPosition.x][endPushingPosition.y]].movable);
 					if (!TILES[world[endPushingPosition.x][endPushingPosition.y]].solid) {
-						for (let x = endPushingPosition.x; x - player.position.x; x -= newDirection.x) { // Shift tiles
-							world[x][player.position.y] = world[(x - newDirection.x + worldSize.x) % worldSize.x][player.position.y];
-						}
-						for (let y = endPushingPosition.y; y - player.position.y; y -= newDirection.y) {
-							world[player.position.x][y] = world[player.position.x][(y - newDirection.y + worldSize.y) % worldSize.y];
-						}
-						player.position.x += newDirection.x;
-						player.position.y += newDirection.y;
+						for (let x = endPushingPosition.x; x - player.position.x; x = (x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X)
+							world[x][player.position.y] = world[(x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X][player.position.y];
+						for (let y = endPushingPosition.y; y - player.position.y; y = (y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y)
+							world[player.position.x][y] = world[player.position.x][(y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y];
+						player.position.x = (player.position.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
+						player.position.y = (player.position.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
 					}
 				}
 				player.direction = newDirection;
@@ -104,8 +112,5 @@ new WebSocketServer({
 		} catch (error) {
 			console.log(error);
 		}
-	}).on('close', () => {
-		console.log('player disconnected');
-		players.delete(uuid);
-	});
+	}).on('close', () => players.delete(uuid));
 })

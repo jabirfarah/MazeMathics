@@ -3,7 +3,7 @@
 <html>
 	<head>
 		<title>
-			MazeMathics
+			Mazemathics
 		</title>
 	</head>
 
@@ -16,29 +16,53 @@
 			canvas.height = 400;
 			const pen = canvas.getContext('2d');
 
+			const TILE_COLORS = ['#000000', '#3f3f3f', '#bfbfbf']; // THIS IS TEMPORARY
+
 			const socket = new WebSocket(`${location.protocol.replace('http', 'ws')}//${location.host}`);
 			socket.addEventListener('open', () => console.log('connected'));
 			socket.addEventListener('close', () => console.log('disconnected'));
 			socket.addEventListener('message', ({ data }) => {
 				const { world, players } = JSON.parse(data);
 
-				// Draw world & players
-				const TILE_COLORS = ['#3f3f3f', '#7f7f7f', '#bfbfbf'];
-				for (let x = 0; x < world.length; ++x)
-					for (let y = 0; y < world[0].length; ++y) {
+				// /*
+				const WORLD_SIZE_X = world.length; // TEMPORARY
+				const WORLD_SIZE_Y = world[0].length;
+				const TILE_SIZE_X = canvas.width / WORLD_SIZE_X;
+				const TILE_SIZE_Y = canvas.height / WORLD_SIZE_Y;
+				for (let x = 0; x < WORLD_SIZE_X; ++x) // ALSO TEMPORARY
+					for (let y = 0; y < WORLD_SIZE_Y; ++y) {
 						pen.fillStyle = TILE_COLORS[world[x][y]];
-						pen.fillRect(x * canvas.width / world.length, canvas.height - y * canvas.height / world[0].length, canvas.width / world.length, -canvas.height / world[0].length);
+						pen.fillRect(x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
 					}
-				for (const { color, position: { x, y } } of players) {
+				for (const { color, position, direction } of players) { // AND THIS TOO
 					pen.fillStyle = color;
-					pen.fillRect(x * canvas.width / world.length, canvas.height - y * canvas.height / world[0].length, canvas.width / world.length, -canvas.height / world[0].length);
+					pen.fillRect(position.x * TILE_SIZE_X, canvas.height - position.y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
+					pen.fillRect((position.x + direction.x + WORLD_SIZE_X) % WORLD_SIZE_X * TILE_SIZE_X + TILE_SIZE_X / 3, canvas.height - (position.y + direction.y + WORLD_SIZE_Y) % WORLD_SIZE_Y * TILE_SIZE_Y - TILE_SIZE_Y / 3, TILE_SIZE_X - TILE_SIZE_X / 3 * 2, -TILE_SIZE_Y + TILE_SIZE_Y / 3 * 2);
 				}
+				// */
 			});
 			socket.addEventListener('error', (error) => console.log(error));
 			const move = (directionAxis, directionStep) => socket.send(JSON.stringify({
 				directionAxis,
 				directionStep
 			}));
+
+			document.addEventListener('keydown', ({ key }) => {
+				switch (key.toLowerCase()) {
+					case 'd':
+						move('x', 1);
+						break;
+					case 'a':
+						move('x', -1);
+						break;
+					case 'w':
+						move('y', 1);
+						break;
+					case 's':
+						move('y', -1);
+						break;
+				}
+			})
 		</script>
 	</body>
 </html>
