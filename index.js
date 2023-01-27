@@ -54,7 +54,7 @@ const updateAllPlayers = () => {
 	for (const { socket } of [...players.values()])
 		socket.send(JSON.stringify({
 			world,
-			players: [...players.values()].map(({ color, direction, position }) => ({ color, direction, position }))
+			players: [...players.values()].map(({ color, direction, position, pulling }) => ({ color, direction, position, pulling }))
 		}));
 };
 new WebSocketServer({
@@ -77,6 +77,10 @@ new WebSocketServer({
 			x: SPAWN_X,
 			y: SPAWN_Y
 		},
+		pulling: {
+			x: 0,
+			y: 0
+		},
 		socket
 	});
 	updateAllPlayers();
@@ -84,30 +88,58 @@ new WebSocketServer({
 	socket.on('message', (data) => {
 		try {
 			const message = JSON.parse(data);
-			if (Object.hasOwn(player.direction, message.directionAxis)) {
-				const newDirection = {
-					x: 0,
-					y: 0
-				};
-				message.directionStep = +(message.directionStep > 0) || -1;
-				newDirection[message.directionAxis] = message.directionStep;
-				if (player.direction[message.directionAxis] === message.directionStep) {
-					const endPushingPosition = { ...player.position };
-					do {
-						endPushingPosition.x = (endPushingPosition.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
-						endPushingPosition.y = (endPushingPosition.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
-					} while (TILES[world[endPushingPosition.x][endPushingPosition.y]].movable);
-					if (!TILES[world[endPushingPosition.x][endPushingPosition.y]].solid) {
-						for (let x = endPushingPosition.x; x - player.position.x; x = (x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X)
-							world[x][player.position.y] = world[(x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X][player.position.y];
-						for (let y = endPushingPosition.y; y - player.position.y; y = (y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y)
-							world[player.position.x][y] = world[player.position.x][(y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y];
-						player.position.x = (player.position.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
-						player.position.y = (player.position.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
+			switch (message.action) {
+				case 'push':
+					if (Object.hasOwn(player.direction, message.directionAxis)) {
+						const newDirection = {
+							x: 0,
+							y: 0
+						};
+						message.directionStep = +(message.directionStep > 0) || -1;
+						newDirection[message.directionAxis] = message.directionStep;
+						if (player.direction[message.directionAxis] === message.directionStep) {
+							const endPushingPosition = { ...player.position };
+							do {
+								endPushingPosition.x = (endPushingPosition.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
+								endPushingPosition.y = (endPushingPosition.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
+							} while (TILES[world[endPushingPosition.x][endPushingPosition.y]].movable);
+							if (!TILES[world[endPushingPosition.x][endPushingPosition.y]].solid) {
+								for (let x = endPushingPosition.x; x - player.position.x; x = (x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X)
+									world[x][player.position.y] = world[(x - newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X][player.position.y];
+								for (let y = endPushingPosition.y; y - player.position.y; y = (y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y)
+									world[player.position.x][y] = world[player.position.x][(y - newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y];
+								const pulledTile = world[(player.position.x + player.pulling.x + WORLD_SIZE_X) % WORLD_SIZE_X][(player.position.y + player.pulling.y + WORLD_SIZE_Y) % WORLD_SIZE_Y];
+								if (TILES[pulledTile].movable) {
+									world[player.position.x][player.position.y] = pulledTile;
+									world[(player.position.x + player.pulling.x + WORLD_SIZE_X) % WORLD_SIZE_X][(player.position.y + player.pulling.y + WORLD_SIZE_Y) % WORLD_SIZE_Y] = 0;
+									player.pulling = {
+										x: -newDirection.x,
+										y: -newDirection.y
+									};
+								} else
+									player.pulling = {
+										x: 0,
+										y: 0
+									};
+								player.position.x = (player.position.x + newDirection.x + WORLD_SIZE_X) % WORLD_SIZE_X;
+								player.position.y = (player.position.y + newDirection.y + WORLD_SIZE_Y) % WORLD_SIZE_Y;
+							}
+						}
+						player.direction = newDirection;
+						if (player.direction.x === player.pulling.x && player.direction.y === player.pulling.y)
+							player.pulling = {
+								x: 0,
+								y: 0
+							};
+						updateAllPlayers();
 					}
-				}
-				player.direction = newDirection;
-				updateAllPlayers();
+					break;
+				case 'pull':
+					const oldPulling = { ...player.pulling };
+					player.pulling = { ...player.direction };
+					if (player.pulling.x !== oldPulling.x || player.pulling.y !== oldPulling.y)
+						updateAllPlayers();
+					break;
 			}
 		} catch (error) {
 			console.log(error);

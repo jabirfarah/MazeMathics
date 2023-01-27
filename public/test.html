@@ -24,7 +24,6 @@
 			socket.addEventListener('message', ({ data }) => {
 				const { world, players } = JSON.parse(data);
 
-				// /*
 				const WORLD_SIZE_X = world.length; // TEMPORARY
 				const WORLD_SIZE_Y = world[0].length;
 				const TILE_SIZE_X = canvas.width / WORLD_SIZE_X;
@@ -34,32 +33,42 @@
 						pen.fillStyle = TILE_COLORS[world[x][y]];
 						pen.fillRect(x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
 					}
-				for (const { color, position, direction } of players) { // AND THIS TOO
+				for (const { color, direction, position, pulling } of players) { // AND THIS TOO
 					pen.fillStyle = color;
-					pen.fillRect(position.x * TILE_SIZE_X, canvas.height - position.y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
+					// direction
 					pen.fillRect((position.x + direction.x + WORLD_SIZE_X) % WORLD_SIZE_X * TILE_SIZE_X + TILE_SIZE_X / 3, canvas.height - (position.y + direction.y + WORLD_SIZE_Y) % WORLD_SIZE_Y * TILE_SIZE_Y - TILE_SIZE_Y / 3, TILE_SIZE_X - TILE_SIZE_X / 3 * 2, -TILE_SIZE_Y + TILE_SIZE_Y / 3 * 2);
+
+					// position
+					pen.fillRect(position.x * TILE_SIZE_X, canvas.height - position.y * TILE_SIZE_Y, TILE_SIZE_X, -TILE_SIZE_Y);
+
+					// pulling
+					pen.fillRect((position.x + pulling.x + WORLD_SIZE_X) % WORLD_SIZE_X * TILE_SIZE_X + TILE_SIZE_X / 4, canvas.height - (position.y + pulling.y + WORLD_SIZE_Y) % WORLD_SIZE_Y * TILE_SIZE_Y - TILE_SIZE_Y / 4, TILE_SIZE_X - TILE_SIZE_X / 4 * 2, -TILE_SIZE_Y + TILE_SIZE_Y / 4 * 2);
 				}
-				// */
 			});
 			socket.addEventListener('error', (error) => console.log(error));
-			const move = (directionAxis, directionStep) => socket.send(JSON.stringify({
+			const push = (directionAxis, directionStep) => socket.send(JSON.stringify({
+				action: 'push',
 				directionAxis,
 				directionStep
 			}));
+			const pull = () => socket.send(JSON.stringify({ action: 'pull' }));
 
 			document.addEventListener('keydown', ({ key }) => {
 				switch (key.toLowerCase()) {
 					case 'd':
-						move('x', 1);
+						push('x', 1);
 						break;
 					case 'a':
-						move('x', -1);
+						push('x', -1);
 						break;
 					case 'w':
-						move('y', 1);
+						push('y', 1);
 						break;
 					case 's':
-						move('y', -1);
+						push('y', -1);
+						break;
+					case ' ':
+						pull();
 						break;
 				}
 			})
