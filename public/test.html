@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>
+			MazeMathics
+		</title>
+	</head>
+
+	<body>
+		<script>
+			const socket = new WebSocket(`${location.protocol.replace('http', 'ws')}//${location.host}`);
+			socket.addEventListener('open', () => console.log('connected'));
+			socket.addEventListener('close', () => console.log('disconnected'));
+			socket.addEventListener('message', ({ data }) => {
+				const { world, players } = JSON.parse(data);
+
+				// Print world & players FOR TESTING
+				for (const player of players)
+					world[player.position.x][player.position.y] = 3;
+				for (const column of world)
+					console.log(column.join(' '));
+			});
+			socket.addEventListener('error', (error) => console.log(error));
+			const move = (directionAxis, directionStep) => socket.send(JSON.stringify({
+				directionAxis,
+				directionStep
+			}));
+		</script>
+	</body>
+</html>
