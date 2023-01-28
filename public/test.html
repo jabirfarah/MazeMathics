@@ -175,8 +175,8 @@
 						pen.drawImage(TILES_IMAGE, TILES_MAP[viewedWorld[x][y]].x, TILES_MAP[viewedWorld[x][y]].y, TILES_MAP[viewedWorld[x][y]].w, TILES_MAP[viewedWorld[x][y]].h, x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
 					}
 				for (const { color, direction, position, pulling } of players) { // AND THIS TOO
-					position.x = playerCoords.x - position.x + Math.floor(WORLD_SIZE_X / 2);
-					position.y = playerCoords.y - position.y + Math.floor(WORLD_SIZE_Y / 2);
+					position.x = position.x - playerCoords.x + Math.floor(WORLD_SIZE_X / 2);
+					position.y = position.y - playerCoords.y + Math.floor(WORLD_SIZE_Y / 2);
 
 					pen.fillStyle = color;
 					// direction
