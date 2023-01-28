@@ -7,11 +7,23 @@
 		</title>
 
 		<img src='./tilemap.png' hidden/>
+
 	</head>
 
 	<body>
 		<canvas></canvas>
-
+		<br/>
+		Press G to place tile
+		<br/>
+		1 - floor
+		<br/>
+		2 - wall
+		<br/>
+		3 - door
+		<br/>
+		4 - crate (locked)
+		<br/>
+		5 - crate (unlocked)
 		<script type='module'>
 			const canvas = document.querySelector('canvas');
 			canvas.width = 600;
@@ -155,6 +167,8 @@
 				}
 			];
 
+			let selectedTile = 1;
+
 			await new Promise((resolve) => TILES_IMAGE.addEventListener('load', resolve));
 
 			const socket = new WebSocket(`${location.protocol.replace('http', 'ws')}//${location.host}`);
@@ -196,6 +210,10 @@
 				directionStep
 			}));
 			const pull = () => socket.send(JSON.stringify({ action: 'pull' }));
+			const place = (tile) => socket.send(JSON.stringify({
+				action: 'place',
+				tile
+			})) || console.log('placed');
 
 			document.addEventListener('keydown', ({ key }) => {
 				switch (key.toLowerCase()) {
@@ -213,6 +231,25 @@
 						break;
 					case ' ':
 						pull();
+						break;
+					case 'g':
+						console.log('placing');
+						place(selectedTile - 1);
+						break;
+					case '1':
+						selectedTile = 1;
+						break;
+					case '2':
+						selectedTile = 2;
+						break;
+					case '3':
+						selectedTile = 3;
+						break;
+					case '4':
+						selectedTile = 4;
+						break;
+					case '5':
+						selectedTile = 5;
 						break;
 				}
 			})
