@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+
+<html>
+	<head>
+		<title>
+			MazeMathics
+		</title>
+
+		<img src='./tilemap.png' hidden/>
+
+	</head>
+
+	<body>
+		<canvas></canvas>
+		<br/>
+		Press G to place tile
+		<br/>
+		1 - floor
+		<br/>
+		2 - wall
+		<br/>
+		3 - door
+		<br/>
+		4 - crate (locked)
+		<br/>
+		5 - crate (unlocked)
+		<script type='module'>
+			const canvas = document.querySelector('canvas');
+			canvas.width = 600;
+			canvas.height = 600;
+			const pen = canvas.getContext('2d');
+			pen.imageSmoothingEnabled = false;
+
+			const TILES_IMAGE = document.querySelector('img');
+			const TILES_MAP = [
+				{ // Floor
+					x: 0,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // Walls
+					x: 8,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // Door
+					x: 16,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // locked crate
+					x: 32,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // unlocked ^
+					x: 40,
+					y: 0,
+					w: 8,
+					h: 8
+				},
+				{ // 0
+					x: 0,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 1
+					x: 8,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 2
+					x: 16,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 3
+					x: 24,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 4
+					x: 32,
+					y: 8,
+					w: 8,
+					h: 8
+				},
+				{ // 5
+					x: 0,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 6
+					x: 8,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 7
+					x: 16,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 8
+					x: 24,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // 9
+					x: 32,
+					y: 16,
+					w: 8,
+					h: 8
+				},
+				{ // +
+					x: 0,
+					y: 24,
+					w: 8,
+					h: 8
+				},
+				{ // -
+					x: 8,
+					y: 24,
+					w: 8,
+					h: 8
+				},
+				{ // *
+					x: 16,
+					y: 24,
+					w: 8,
+					h: 8
+				},
+				{ // /
+					x: 24,
+					y: 24,
+					w: 8,
+					h: 8
+				},
+				{ // ^
+					x: 32,
+					y: 24,
+					w: 8,
+					h: 8
+				},
+				{ // %
+					x: 40,
+					y: 24,
+					w: 8,
+					h: 8
+				},
+				{ // =
+					x: 48,
+					y: 24,
+					w: 8,
+					h: 8
+				}
+			];
+
+			let selectedTile = 1;
+
+			await new Promise((resolve) => TILES_IMAGE.addEventListener('load', resolve));
+
+			const socket = new WebSocket(`${location.protocol.replace('http', 'ws')}//${location.host}`);
+			socket.addEventListener('open', () => console.log('connected'));
+			socket.addEventListener('close', () => console.log('disconnected'));
+			socket.addEventListener('message', ({ data }) => {
+				const { viewedWorld, playerCoords, players } = JSON.parse(data);
+				console.log(viewedWorld);
+				const WORLD_SIZE_X = viewedWorld.length; // TEMPORARY
+				const WORLD_SIZE_Y = viewedWorld[0].length;
+				const TILE_SIZE_X = canvas.width / WORLD_SIZE_X;
+				const TILE_SIZE_Y = canvas.height / WORLD_SIZE_Y;
+				
+				for (let x = 0; x < WORLD_SIZE_X; ++x) // ALSO TEMPORARY
+					for (let y = 0; y < WORLD_SIZE_Y; ++y) {
+						// pen.fillStyle = TILE_COLORS[world[x][y]];
+						// pen.fillRect(x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
+						pen.drawImage(TILES_IMAGE, TILES_MAP[viewedWorld[x][y]].x, TILES_MAP[viewedWorld[x][y]].y, TILES_MAP[viewedWorld[x][y]].w, TILES_MAP[viewedWorld[x][y]].h, x * TILE_SIZE_X, canvas.height - y * TILE_SIZE_Y, TILE_SIZE_X + 1, -TILE_SIZE_Y - 1);
+					}
+				for (const { color, direction, position, pulling } of players) { // AND THIS TOO
+					position.x = position.x - playerCoords.x + Math.floor(WORLD_SIZE_X / 2);
+					position.y = position.y - playerCoords.y + Math.floor(WORLD_SIZE_Y / 2);
+
+					pen.fillStyle = color;
+					// direction
+					pen.fillRect((position.x + direction.x + WORLD_SIZE_X) % WORLD_SIZE_X * TILE_SIZE_X + TILE_SIZE_X / 3, canvas.height - (position.y + direction.y + WORLD_SIZE_Y) % WORLD_SIZE_Y * TILE_SIZE_Y - TILE_SIZE_Y / 3, TILE_SIZE_X - TILE_SIZE_X / 3 * 2, -TILE_SIZE_Y + TILE_SIZE_Y / 3 * 2);
+
+					// position
+					pen.fillRect(position.x * TILE_SIZE_X, canvas.height - position.y * TILE_SIZE_Y, TILE_SIZE_X, -TILE_SIZE_Y);
+
+					// pulling
+					pen.fillRect((position.x + pulling.x + WORLD_SIZE_X) % WORLD_SIZE_X * TILE_SIZE_X + TILE_SIZE_X / 4, canvas.height - (position.y + pulling.y + WORLD_SIZE_Y) % WORLD_SIZE_Y * TILE_SIZE_Y - TILE_SIZE_Y / 4, TILE_SIZE_X - TILE_SIZE_X / 4 * 2, -TILE_SIZE_Y + TILE_SIZE_Y / 4 * 2);
+				}
+			});
+			socket.addEventListener('error', (error) => console.log(error));
+			const push = (directionAxis, directionStep) => socket.send(JSON.stringify({
+				action: 'push',
+				directionAxis,
+				directionStep
+			}));
+			const pull = () => socket.send(JSON.stringify({ action: 'pull' }));
+			const place = (tile) => socket.send(JSON.stringify({
+				action: 'place',
+				tile
+			})) || console.log('placed');
+
+			document.addEventListener('keydown', ({ key }) => {
+				switch (key.toLowerCase()) {
+					case 'd':
+						push('x', 1);
+						break;
+					case 'a':
+						push('x', -1);
+						break;
+					case 'w':
+						push('y', 1);
+						break;
+					case 's':
+						push('y', -1);
+						break;
+					case ' ':
+						pull();
+						break;
+					case 'g':
+						console.log('placing');
+						place(selectedTile - 1);
+						break;
+					case '1':
+						selectedTile = 1;
+						break;
+					case '2':
+						selectedTile = 2;
+						break;
+					case '3':
+						selectedTile = 3;
+						break;
+					case '4':
+						selectedTile = 4;
+						break;
+					case '5':
+						selectedTile = 5;
+						break;
+				}
+			})
+		</script>
+	</body>
+</html>
