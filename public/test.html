@@ -13,6 +13,13 @@
 	<body>
 		<canvas></canvas>
 		<br/>
+		Controls:
+		<br/>
+		WASD to move
+		<br/>
+		Space to drag tile
+		<br/>
+		<br/>
 		Press G to place tile
 		<br/>
 		1 - floor
@@ -21,9 +28,10 @@
 		<br/>
 		3 - door
 		<br/>
-		4 - crate (locked)
+		4 - crate (movable)
 		<br/>
-		5 - crate (unlocked)
+		5 - crate (not movable)
+
 		<script type='module'>
 			const canvas = document.querySelector('canvas');
 			canvas.width = 600;
@@ -254,5 +262,9 @@
 				}
 			})
 		</script>
+
+
+
+
 	</body>
 </html>
